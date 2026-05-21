@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yuchat Custom</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --progress: 6%;
+      --ring-idle: rgba(214, 224, 250, 0.96);
+      --ring-cyan: #3de4ff;
+      --ring-blue: #2874ff;
+      --ring-violet: #7c4cff;
+      --ring-pink: #ff42c8;
+      --ring-warm: #ff9d55;
+      font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    body {
+      -webkit-app-region: drag;
+      display: grid;
+      place-items: center;
+      transition: opacity 170ms ease, transform 170ms ease;
+    }
+
+    body.is-gone {
+      opacity: 0;
+      transform: scale(0.965);
+    }
+
+    .splash-shell {
+      -webkit-app-region: drag;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+    }
+
+    .icon-progress {
+      -webkit-app-region: drag;
+      position: relative;
+      width: min(236px, calc(100vw - 48px), calc(100vh - 48px));
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border-radius: 58px;
+      transform: translateZ(0);
+    }
+
+    .icon-progress::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      padding: 7px;
+      border-radius: inherit;
+      background:
+        conic-gradient(
+          from -90deg,
+          transparent 0 var(--progress),
+          var(--ring-idle) var(--progress),
+          var(--ring-idle) 100%
+        ),
+        conic-gradient(
+          from -90deg,
+          var(--ring-cyan) 0%,
+          var(--ring-blue) 24%,
+          var(--ring-violet) 54%,
+          var(--ring-pink) 78%,
+          var(--ring-warm) 100%
+        );
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      mask-composite: exclude;
+      box-shadow:
+        0 0 22px rgba(58, 211, 255, 0.24),
+        0 0 34px rgba(255, 76, 210, 0.18);
+      animation: ringGlow 2.2s ease-in-out infinite;
+    }
+
+    .icon-progress::after {
+      content: "";
+      position: absolute;
+      inset: 13px;
+      border-radius: 48px;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      pointer-events: none;
+    }
+
+    .icon-frame {
+      -webkit-app-region: drag;
+      position: relative;
+      z-index: 1;
+      width: calc(100% - 30px);
+      height: calc(100% - 30px);
+      border-radius: 46px;
+      overflow: hidden;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .icon-frame img {
+      -webkit-app-region: drag;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.08);
+      transform-origin: center;
+      display: block;
+    }
+
+    .status {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    @keyframes ringGlow {
+      0%,
+      100% {
+        opacity: 0.92;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="splash-shell" aria-label="Загрузка Yuchat Custom">
+    <div class="icon-progress" data-role="progress-ring" aria-hidden="true">
+      <div class="icon-frame">
+        <img src="assets/load.png" alt="" draggable="false" />
+      </div>
+    </div>
+    <div class="status" data-role="progress-status">Загрузка 6%</div>
+  </main>
+
+  <script>
+    (() => {
+      const progressRing = document.querySelector('[data-role="progress-ring"]');
+      const progressStatus = document.querySelector('[data-role="progress-status"]');
+
+      let committedPercent = 6;
+      let displayedPercent = 6;
+      let finished = false;
+      let lastExternalUpdateAt = performance.now();
+
+      const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+      const renderProgress = () => {
+        const safePercent = clamp(displayedPercent, 0, 100);
+        progressRing?.style.setProperty('--progress', `${safePercent}%`);
+        if (progressStatus) {
+          progressStatus.textContent = `Загрузка ${Math.round(safePercent)}%`;
+        }
+      };
+
+      const tick = (nowAt) => {
+        const idleElapsed = Math.max(0, nowAt - lastExternalUpdateAt);
+        const idleBoost = finished ? 0 : Math.max(0, idleElapsed - 380) * 0.008;
+        const animatedTarget = finished
+          ? 100
+          : Math.max(committedPercent, Math.min(92, committedPercent + idleBoost));
+        const easing = finished ? 0.2 : 0.11;
+
+        displayedPercent += (animatedTarget - displayedPercent) * easing;
+        if (Math.abs(animatedTarget - displayedPercent) < 0.08) {
+          displayedPercent = animatedTarget;
+        }
+
+        renderProgress();
+        requestAnimationFrame(tick);
+      };
+
+      window.__updateStartupSplash = (nextState = {}) => {
+        const incomingPercent = Number(nextState.percent);
+        if (Number.isFinite(incomingPercent)) {
+          committedPercent = clamp(Math.max(committedPercent, incomingPercent), 0, 100);
+        }
+        lastExternalUpdateAt = performance.now();
+      };
+
+      window.__finishStartupSplash = () => {
+        finished = true;
+        committedPercent = 100;
+        setTimeout(() => {
+          document.body.classList.add('is-gone');
+        }, 70);
+      };
+
+      renderProgress();
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>

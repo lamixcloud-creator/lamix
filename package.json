@@ -1,0 +1,126 @@
+{
+  "name": "YuchatCustom",
+  "version": "1.0.2",
+  "description": "YuchatCustom",
+  "homepage": "https://example.com/yuchatcustom",
+  "author": {
+    "name": "YuchatCustom",
+    "email": "noreply@example.com"
+  },
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "start:legacy": "electron . --legacy-preload",
+    "start:local-shell": "electron . --local-shell",
+    "start:devtools": "electron . --open-devtools",
+    "start:diagnostics": "electron . --open-devtools --capture-diagnostics --enable-runtime-logs",
+    "smoke": "electron . --smoke-test",
+    "dist": "electron-builder",
+    "dist:dir": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^41.0.3",
+    "electron-builder": "26.8.1"
+  },
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "electron-store": "^11.0.2"
+  },
+  "build": {
+    "appId": "YuchatCustom",
+    "productName": "YuchatCustom",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/@ffmpeg-installer/darwin-arm64/**/*",
+      "!node_modules/@ffmpeg-installer/darwin-x64/**/*",
+      "!dist/**",
+      "!Latest/**",
+      "!node_modules/.cache/**",
+      "!.DS_Store"
+    ],
+    "asarUnpack": [
+      "node_modules/@ffmpeg-installer/**"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "icon": "assets/icon.icns",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "YuchatCustom"
+      },
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "sign": false,
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "maintainer": "YuchatCustom <noreply@example.com>",
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
+      "icon": "build/icons",
+      "category": "Network"
+    },
+    "rpm": {
+      "depends": [
+        "libXtst",
+        "libuuid"
+      ]
+    },
+    "deb": {
+      "depends": [
+        "libxtst6",
+        "libuuid1"
+      ]
+    }
+  }
+}
